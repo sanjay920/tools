@@ -86,5 +86,7 @@ modelProviders:
     reference: ./azure-openai-model-provider
   ollama-model-provider:
     reference: ./ollama-model-provider
+  rubra-model-provider:
+    reference: ./rubra-model-provider
   voyage-model-provider:
     reference: ./voyage-model-provider

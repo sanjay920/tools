@@ -1,0 +1,11 @@
+Name: Rubra
+Description: Model provider for models running on Rubra
+Metadata: envVars: ACORN_RUBRA_MODEL_PROVIDER_HOST
+Model Provider: true
+Credential: ../model-provider-credential as rubra-model-provider
+
+#!sys.daemon /usr/bin/env python3 ${GPTSCRIPT_TOOL_DIR}/main.py
+
+---
+!metadata:*:icon
+https://cdn-avatars.huggingface.co/v1/production/uploads/6557a7ec2bcc6e8a16e88483/SedguFHPLx1gOghf_JVwm.png
