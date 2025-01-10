@@ -28,6 +28,17 @@ func main() {
 		ValidateFn:      proxy.DefaultValidateOpenAIFunc,
 	}
 
+	if cfg.Port == "" {
+		cfg.Port = "8000"
+	}
+
+	if len(os.Args) > 1 && os.Args[1] == "validate" {
+		if err := proxy.Validate(cfg); err != nil {
+			os.Exit(1)
+		}
+		return
+	}
+
 	if err := proxy.Run(cfg); err != nil {
 		panic(err)
 	}
