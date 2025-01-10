@@ -15,6 +15,7 @@ type Config struct {
 	UseTLS          bool
 	ValidateFn      func(cfg *Config) error
 	RewriteModelsFn func(*http.Response) error
+	PathPrefix      string
 }
 
 type server struct {
@@ -79,7 +80,11 @@ func (s *server) proxyDirector(req *http.Request) {
 
 	req.Header.Set("Authorization", "Bearer "+s.cfg.APIKey)
 
-	if !strings.HasPrefix(req.URL.Path, "/v1") {
+	if s.cfg.PathPrefix != "" {
+		if !strings.HasPrefix(req.URL.Path, s.cfg.PathPrefix) {
+			req.URL.Path = s.cfg.PathPrefix + req.URL.Path
+		}
+	} else if !strings.HasPrefix(req.URL.Path, "/v1") {
 		req.URL.Path = "/v1" + req.URL.Path
 	}
 }
