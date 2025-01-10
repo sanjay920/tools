@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/obot-platform/tools/openai-model-provider/server"
+	"github.com/obot-platform/tools/openai-model-provider/proxy"
 )
 
 func main() {
@@ -19,7 +19,16 @@ func main() {
 		port = "8000"
 	}
 
-	if err := server.Run(apiKey, port); err != nil {
+	cfg := &proxy.Config{
+		APIKey:          apiKey,
+		Port:            port,
+		UpstreamHost:    "api.openai.com",
+		UseTLS:          true,
+		RewriteModelsFn: proxy.DefaultRewriteModelsResponse,
+		ValidateFn:      proxy.DefaultValidateOpenAIFunc,
+	}
+
+	if err := proxy.Run(cfg); err != nil {
 		panic(err)
 	}
 }
