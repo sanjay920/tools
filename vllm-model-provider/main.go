@@ -13,6 +13,10 @@ import (
 
 const loggerPath = "/tools/vllm-model-provider/validate"
 
+func cleanURL(endpoint string) string {
+	return strings.TrimRight(endpoint, "/")
+}
+
 func ValidateVLLMAPIKey(cfg *proxy.Config) error {
 	endpoint := os.Getenv("OBOT_VLLM_MODEL_PROVIDER_ENDPOINT")
 	if endpoint == "" {
@@ -29,8 +33,7 @@ func ValidateVLLMAPIKey(cfg *proxy.Config) error {
 		return nil
 	}
 
-	// Clean the endpoint URL before using it
-	endpoint = strings.TrimRight(endpoint, "/")
+	endpoint = cleanURL(endpoint)
 	return proxy.DoValidate(cfg.APIKey, endpoint+"/v1/models", loggerPath, "Invalid vLLM Configuration")
 }
 
@@ -47,14 +50,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Parse the endpoint URL to determine scheme and host
+	endpoint = cleanURL(endpoint)
 	u, err := url.Parse(endpoint)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Invalid endpoint URL %q: %v\n", endpoint, err)
 		os.Exit(1)
 	}
 
-	// Set default scheme if not provided
 	if u.Scheme == "" {
 		if u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1" {
 			u.Scheme = "http"

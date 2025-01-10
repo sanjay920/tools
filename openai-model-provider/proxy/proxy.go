@@ -22,10 +22,6 @@ type server struct {
 	cfg *Config
 }
 
-func cleanHost(host string) string {
-	return strings.TrimRight(host, "/")
-}
-
 func Run(cfg *Config) error {
 	if cfg.Port == "" {
 		cfg.Port = "8000"
@@ -34,7 +30,6 @@ func Run(cfg *Config) error {
 		cfg.UpstreamHost = "api.openai.com"
 		cfg.UseTLS = true
 	}
-	cfg.UpstreamHost = cleanHost(cfg.UpstreamHost)
 
 	if cfg.RewriteModelsFn == nil {
 		cfg.RewriteModelsFn = DefaultRewriteModelsResponse
