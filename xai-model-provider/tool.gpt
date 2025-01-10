@@ -10,3 +10,10 @@ Metadata: noUserAuth: xai-model-provider
 ---
 !metadata:*:icon
 /admin/assets/xai-logo.svg
+
+---
+Name: validate
+Description: Validate the xAI API key
+Metadata: envVars: OBOT_XAI_MODEL_PROVIDER_API_KEY
+
+#!${GPTSCRIPT_TOOL_DIR}/bin/gptscript-go-tool validate
