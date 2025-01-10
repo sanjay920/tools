@@ -8,8 +8,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-
-	openai "github.com/gptscript-ai/chat-completion-client"
 )
 
 func DefaultRewriteModelsResponse(resp *http.Response) error {
@@ -30,12 +28,21 @@ func DefaultRewriteModelsResponse(resp *http.Response) error {
 		body = gzReader
 	}
 
-	var models openai.ModelsList
+	var models struct {
+		Object string `json:"object"`
+		Data   []struct {
+			ID       string            `json:"id"`
+			Object   string            `json:"object"`
+			OwnedBy  string            `json:"owned_by"`
+			Metadata map[string]string `json:"metadata,omitempty"`
+		} `json:"data"`
+	}
+
 	if err := json.NewDecoder(body).Decode(&models); err != nil {
 		return fmt.Errorf("failed to decode models response: %w", err)
 	}
 
-	for i, model := range models.Models {
+	for i, model := range models.Data {
 		if model.Metadata == nil {
 			model.Metadata = make(map[string]string)
 		}
@@ -52,7 +59,7 @@ func DefaultRewriteModelsResponse(resp *http.Response) error {
 			strings.HasPrefix(model.ID, "ft:dall-e"):
 			model.Metadata["usage"] = "image-generation"
 		}
-		models.Models[i] = model
+		models.Data[i] = model
 	}
 
 	b, err := json.Marshal(models)
@@ -64,41 +71,59 @@ func DefaultRewriteModelsResponse(resp *http.Response) error {
 	return nil
 }
 
-func RewriteAllModelsWithUsage(usage string) func(*http.Response) error {
+func RewriteAllModelsWithUsage(usage string, filter ...func(string) bool) func(*http.Response) error {
 	return func(resp *http.Response) error {
 		if resp.StatusCode != http.StatusOK {
 			return nil
 		}
-		originalBody := resp.Body
-		defer originalBody.Close()
 
+		defer resp.Body.Close()
+
+		var body io.Reader = resp.Body
 		if resp.Header.Get("Content-Encoding") == "gzip" {
-			gzReader, err := gzip.NewReader(originalBody)
+			gzReader, err := gzip.NewReader(resp.Body)
 			if err != nil {
 				return fmt.Errorf("failed to create gzip reader: %w", err)
 			}
 			defer gzReader.Close()
 			resp.Header.Del("Content-Encoding")
-			originalBody = gzReader
+			body = gzReader
 		}
 
-		var models openai.ModelsList
-		if err := json.NewDecoder(originalBody).Decode(&models); err != nil {
+		var models struct {
+			Object string `json:"object"`
+			Data   []struct {
+				ID       string            `json:"id"`
+				Object   string            `json:"object"`
+				OwnedBy  string            `json:"owned_by"`
+				Metadata map[string]string `json:"metadata,omitempty"`
+			} `json:"data"`
+		}
+
+		if err := json.NewDecoder(body).Decode(&models); err != nil {
 			return fmt.Errorf("failed to decode models response: %w", err)
 		}
 
-		for i, model := range models.Models {
-			if model.Metadata == nil {
-				model.Metadata = make(map[string]string)
+		for i, model := range models.Data {
+			shouldMark := true
+			if len(filter) > 0 && filter[0] != nil {
+				shouldMark = filter[0](model.ID)
 			}
-			model.Metadata["usage"] = usage
-			models.Models[i] = model
+
+			if shouldMark {
+				if model.Metadata == nil {
+					model.Metadata = make(map[string]string)
+				}
+				model.Metadata["usage"] = usage
+				models.Data[i] = model
+			}
 		}
 
 		b, err := json.Marshal(models)
 		if err != nil {
 			return fmt.Errorf("failed to marshal models response: %w", err)
 		}
+
 		resp.Body = io.NopCloser(bytes.NewReader(b))
 		resp.Header.Set("Content-Length", fmt.Sprintf("%d", len(b)))
 		return nil
