@@ -22,12 +22,12 @@ func Run(apiKey, port string) error {
 		port:   port,
 	}
 
-	mux.HandleFunc("/{$}", s.healthz)
-	mux.Handle("GET /v1/models", &httputil.ReverseProxy{
+	mux.HandleFunc("/healthz", s.healthz)
+	mux.Handle("/v1/models", &httputil.ReverseProxy{
 		Director:       s.proxy,
 		ModifyResponse: s.rewriteModelsResponse,
 	})
-	mux.Handle("/{path...}", &httputil.ReverseProxy{
+	mux.Handle("/v1/", &httputil.ReverseProxy{
 		Director: s.proxy,
 	})
 
@@ -56,22 +56,22 @@ func (s *server) rewriteModelsResponse(resp *http.Response) error {
 		return nil
 	}
 
-	originalBody := resp.Body
-	defer originalBody.Close()
+	defer resp.Body.Close()
 
+	var body io.Reader = resp.Body
 	if resp.Header.Get("Content-Encoding") == "gzip" {
-		var err error
-		originalBody, err = gzip.NewReader(originalBody)
+		gzReader, err := gzip.NewReader(resp.Body)
 		if err != nil {
 			return fmt.Errorf("failed to create gzip reader: %w", err)
 		}
-		defer originalBody.Close()
+		defer gzReader.Close()
 		resp.Header.Del("Content-Encoding")
+		body = gzReader
 	}
 
 	var models openai.ModelsList
-	if err := json.NewDecoder(originalBody).Decode(&models); err != nil {
-		return fmt.Errorf("failed to decode models response: %w, %d, %v", err, resp.StatusCode, resp.Header)
+	if err := json.NewDecoder(body).Decode(&models); err != nil {
+		return fmt.Errorf("failed to decode models response: %w", err)
 	}
 
 	// Set all DeepSeek models as LLM

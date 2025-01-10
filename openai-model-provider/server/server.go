@@ -11,7 +11,7 @@ import (
 	"net/http/httputil"
 	"strings"
 
-	"github.com/gptscript-ai/chat-completion-client"
+	openai "github.com/gptscript-ai/chat-completion-client"
 )
 
 func Run(apiKey, port string) error {
@@ -22,12 +22,12 @@ func Run(apiKey, port string) error {
 		port:   port,
 	}
 
-	mux.HandleFunc("/{$}", s.healthz)
-	mux.Handle("GET /v1/models", &httputil.ReverseProxy{
+	mux.HandleFunc("/healthz", s.healthz)
+	mux.Handle("/v1/models", &httputil.ReverseProxy{
 		Director:       s.proxy,
 		ModifyResponse: s.rewriteModelsResponse,
 	})
-	mux.Handle("/{path...}", &httputil.ReverseProxy{
+	mux.Handle("/v1/", &httputil.ReverseProxy{
 		Director: s.proxy,
 	})
 
