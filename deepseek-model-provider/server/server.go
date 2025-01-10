@@ -22,12 +22,12 @@ func Run(apiKey, port string) error {
 		port:   port,
 	}
 
-	mux.HandleFunc("/healthz", s.healthz)
+	mux.HandleFunc("/{$}", s.healthz)
 	mux.Handle("/v1/models", &httputil.ReverseProxy{
 		Director:       s.proxy,
 		ModifyResponse: s.rewriteModelsResponse,
 	})
-	mux.Handle("/v1/", &httputil.ReverseProxy{
+	mux.Handle("/{path...}", &httputil.ReverseProxy{
 		Director: s.proxy,
 	})
 
@@ -71,7 +71,7 @@ func (s *server) rewriteModelsResponse(resp *http.Response) error {
 
 	var models openai.ModelsList
 	if err := json.NewDecoder(body).Decode(&models); err != nil {
-		return fmt.Errorf("failed to decode models response: %w", err)
+		return fmt.Errorf("failed to decode models response: %w, %d, %v", err, resp.StatusCode, resp.Header)
 	}
 
 	// Set all DeepSeek models as LLM
