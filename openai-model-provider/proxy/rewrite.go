@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"bytes"
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
@@ -15,21 +16,22 @@ func DefaultRewriteModelsResponse(resp *http.Response) error {
 	if resp.StatusCode != http.StatusOK {
 		return nil
 	}
-	originalBody := resp.Body
-	defer originalBody.Close()
 
+	defer resp.Body.Close()
+
+	var body io.Reader = resp.Body
 	if resp.Header.Get("Content-Encoding") == "gzip" {
-		gzReader, err := gzip.NewReader(originalBody)
+		gzReader, err := gzip.NewReader(resp.Body)
 		if err != nil {
 			return fmt.Errorf("failed to create gzip reader: %w", err)
 		}
 		defer gzReader.Close()
 		resp.Header.Del("Content-Encoding")
-		originalBody = gzReader
+		body = gzReader
 	}
 
 	var models openai.ModelsList
-	if err := json.NewDecoder(originalBody).Decode(&models); err != nil {
+	if err := json.NewDecoder(body).Decode(&models); err != nil {
 		return fmt.Errorf("failed to decode models response: %w", err)
 	}
 
@@ -57,7 +59,7 @@ func DefaultRewriteModelsResponse(resp *http.Response) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal models response: %w", err)
 	}
-	resp.Body = io.NopCloser(strings.NewReader(string(b)))
+	resp.Body = io.NopCloser(bytes.NewReader(b))
 	resp.Header.Set("Content-Length", fmt.Sprintf("%d", len(b)))
 	return nil
 }
@@ -97,7 +99,7 @@ func RewriteAllModelsWithUsage(usage string) func(*http.Response) error {
 		if err != nil {
 			return fmt.Errorf("failed to marshal models response: %w", err)
 		}
-		resp.Body = io.NopCloser(strings.NewReader(string(b)))
+		resp.Body = io.NopCloser(bytes.NewReader(b))
 		resp.Header.Set("Content-Length", fmt.Sprintf("%d", len(b)))
 		return nil
 	}

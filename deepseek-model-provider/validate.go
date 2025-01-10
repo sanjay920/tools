@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"log"
+	"time"
 
 	"github.com/obot-platform/tools/openai-model-provider/proxy"
 )
@@ -11,8 +12,10 @@ const loggerPath = "/tools/deepseek-model-provider/validate"
 
 func ValidateDeepSeekAPIKey(cfg *proxy.Config) error {
 	if cfg.APIKey == "" {
-		fmt.Printf("{\"error\": \"%s\"}\n", "Invalid DeepSeek Credentials")
-		os.Exit(0)
+		const msg = "Invalid DeepSeek Credentials"
+		log.Printf("time=%q level=error msg=%q logger=%s", time.Now().Format(time.RFC3339), msg, loggerPath)
+		fmt.Printf("{\"error\": \"%s\"}\n", msg)
+		return nil
 	}
 
 	url := "https://api.deepseek.com/v1/models"

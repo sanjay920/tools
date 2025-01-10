@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -22,6 +21,12 @@ func logError(loggerPath string, msg string) {
 	log.Printf("time=%q level=error msg=%q logger=%s", time.Now().Format(time.RFC3339), msg, loggerPath)
 }
 
+func handleValidationError(loggerPath, msg string) error {
+	logError(loggerPath, msg)
+	fmt.Printf("{\"error\": \"%s\"}\n", msg)
+	return nil
+}
+
 type ValidateFn func(cfg *Config) error
 
 func DefaultValidateOpenAIFunc(cfg *Config) error {
@@ -29,40 +34,27 @@ func DefaultValidateOpenAIFunc(cfg *Config) error {
 	return DoValidate(cfg.APIKey, url, "/tools/openai-model-provider/validate", "Invalid OpenAI Credentials")
 }
 
-func printValidationError(msg string) {
-	fmt.Printf("{\"error\": \"%s\"}\n", msg)
-	os.Exit(0)
-}
-
 func DoValidate(apiKey, urlStr, loggerPath, invalidCredsMsg string) error {
 	req, err := http.NewRequest("GET", urlStr, nil)
 	if err != nil {
-		logError(loggerPath, invalidCredsMsg)
-		printValidationError(invalidCredsMsg)
-		return nil
+		return handleValidationError(loggerPath, invalidCredsMsg)
 	}
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		logError(loggerPath, invalidCredsMsg)
-		printValidationError(invalidCredsMsg)
-		return nil
+		return handleValidationError(loggerPath, invalidCredsMsg)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logError(loggerPath, invalidCredsMsg)
-		printValidationError(invalidCredsMsg)
-		return nil
+		return handleValidationError(loggerPath, invalidCredsMsg)
 	}
 
 	if resp.StatusCode != 200 {
-		logError(loggerPath, invalidCredsMsg)
-		printValidationError(invalidCredsMsg)
-		return nil
+		return handleValidationError(loggerPath, invalidCredsMsg)
 	}
 
 	var modelsResp struct {
@@ -70,14 +62,10 @@ func DoValidate(apiKey, urlStr, loggerPath, invalidCredsMsg string) error {
 		Data   []any  `json:"data"`
 	}
 	if err := json.Unmarshal(body, &modelsResp); err != nil {
-		logError(loggerPath, invalidCredsMsg)
-		printValidationError(invalidCredsMsg)
-		return nil
+		return handleValidationError(loggerPath, invalidCredsMsg)
 	}
 	if len(modelsResp.Data) == 0 {
-		logError(loggerPath, invalidCredsMsg)
-		printValidationError(invalidCredsMsg)
-		return nil
+		return handleValidationError(loggerPath, invalidCredsMsg)
 	}
 
 	logInfo(loggerPath, "Credentials are valid")

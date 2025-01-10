@@ -102,4 +102,5 @@ func PrintError(msg string) {
 	json.NewEncoder(os.Stdout).Encode(map[string]string{
 		"error": msg,
 	})
+	os.Exit(1)
 }
