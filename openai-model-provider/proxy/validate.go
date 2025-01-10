@@ -4,51 +4,65 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"os"
+	"time"
 )
+
+func init() {
+	log.SetFlags(0)
+}
+
+func logInfo(loggerPath string, msg string) {
+	log.Printf("time=%q level=info msg=%q logger=%s", time.Now().Format(time.RFC3339), msg, loggerPath)
+}
+
+func logError(loggerPath string, msg string) {
+	log.Printf("time=%q level=error msg=%q logger=%s", time.Now().Format(time.RFC3339), msg, loggerPath)
+}
 
 type ValidateFn func(cfg *Config) error
 
 func DefaultValidateOpenAIFunc(cfg *Config) error {
 	url := "https://api.openai.com/v1/models"
-	return doValidate(cfg.APIKey, url)
+	return DoValidate(cfg.APIKey, url, "/tools/openai-model-provider/validate", "Invalid OpenAI Credentials")
 }
 
-func ValidateDeepSeekAPIKey(cfg *Config) error {
-	url := "https://api.deepseek.com/v1/models"
-	return doValidate(cfg.APIKey, url)
+func printValidationError(msg string) {
+	fmt.Printf("{\"error\": \"%s\"}\n", msg)
+	os.Exit(0)
 }
 
-func doValidate(apiKey, urlStr string) error {
+func DoValidate(apiKey, urlStr, loggerPath, invalidCredsMsg string) error {
 	req, err := http.NewRequest("GET", urlStr, nil)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		logError(loggerPath, invalidCredsMsg)
+		printValidationError(invalidCredsMsg)
+		return nil
 	}
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to connect to %q: %w", urlStr, err)
+		logError(loggerPath, invalidCredsMsg)
+		printValidationError(invalidCredsMsg)
+		return nil
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
+		logError(loggerPath, invalidCredsMsg)
+		printValidationError(invalidCredsMsg)
+		return nil
 	}
 
 	if resp.StatusCode != 200 {
-		var errResp struct {
-			Error struct {
-				Message string `json:"message"`
-				Type    string `json:"type"`
-			} `json:"error"`
-		}
-		if json.Unmarshal(body, &errResp) == nil && errResp.Error.Message != "" {
-			return fmt.Errorf("authentication failed: %s (type=%s)", errResp.Error.Message, errResp.Error.Type)
-		}
-		return fmt.Errorf("API validation failed; status=%d body=%q", resp.StatusCode, string(body))
+		logError(loggerPath, invalidCredsMsg)
+		printValidationError(invalidCredsMsg)
+		return nil
 	}
 
 	var modelsResp struct {
@@ -56,10 +70,17 @@ func doValidate(apiKey, urlStr string) error {
 		Data   []any  `json:"data"`
 	}
 	if err := json.Unmarshal(body, &modelsResp); err != nil {
-		return fmt.Errorf("failed to parse model list: %w. Raw body=%q", err, string(body))
+		logError(loggerPath, invalidCredsMsg)
+		printValidationError(invalidCredsMsg)
+		return nil
 	}
 	if len(modelsResp.Data) == 0 {
-		return fmt.Errorf("no models found in response")
+		logError(loggerPath, invalidCredsMsg)
+		printValidationError(invalidCredsMsg)
+		return nil
 	}
+
+	logInfo(loggerPath, "Credentials are valid")
+	fmt.Println("{\"message\": \"Credentials are valid\"}")
 	return nil
 }

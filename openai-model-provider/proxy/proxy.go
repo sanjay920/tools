@@ -83,3 +83,10 @@ func (s *server) proxyDirector(req *http.Request) {
 		req.URL.Path = "/v1" + req.URL.Path
 	}
 }
+
+func Validate(cfg *Config) error {
+	if cfg.ValidateFn == nil {
+		return nil
+	}
+	return cfg.ValidateFn(cfg)
+}
