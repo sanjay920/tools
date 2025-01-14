@@ -4,25 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
-	"time"
 )
 
-func init() {
-	log.SetFlags(0)
-}
-
-func logInfo(loggerPath string, msg string) {
-	log.Printf("time=%q level=info msg=%q logger=%s", time.Now().Format(time.RFC3339), msg, loggerPath)
-}
-
-func logError(loggerPath string, msg string) {
-	log.Printf("time=%q level=error msg=%q logger=%s", time.Now().Format(time.RFC3339), msg, loggerPath)
-}
-
 func handleValidationError(loggerPath, msg string) error {
-	logError(loggerPath, msg)
+	slog.Error(msg, "logger", loggerPath)
 	fmt.Printf("{\"error\": \"%s\"}\n", msg)
 	return nil
 }
@@ -68,7 +55,7 @@ func DoValidate(apiKey, urlStr, loggerPath, invalidCredsMsg string) error {
 		return handleValidationError(loggerPath, invalidCredsMsg)
 	}
 
-	logInfo(loggerPath, "Credentials are valid")
+	slog.Info("Credentials are valid", "logger", loggerPath)
 	fmt.Println("{\"message\": \"Credentials are valid\"}")
 	return nil
 }
