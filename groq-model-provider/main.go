@@ -2,9 +2,8 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
-	"time"
 
 	"github.com/obot-platform/tools/openai-model-provider/proxy"
 )
@@ -14,7 +13,7 @@ const loggerPath = "/tools/groq-model-provider/validate"
 func ValidateGroqAPIKey(cfg *proxy.Config) error {
 	if cfg.APIKey == "" {
 		const msg = "Invalid Groq Credentials"
-		log.Printf("time=%q level=error msg=%q logger=%s", time.Now().Format(time.RFC3339), msg, loggerPath)
+		slog.Error(msg, "logger", loggerPath)
 		fmt.Printf("{\"error\": \"%s\"}\n", msg)
 		return nil
 	}

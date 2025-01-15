@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/url"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/obot-platform/tools/openai-model-provider/proxy"
 )
@@ -21,14 +20,14 @@ func ValidateVLLMAPIKey(cfg *proxy.Config) error {
 	endpoint := os.Getenv("OBOT_VLLM_MODEL_PROVIDER_ENDPOINT")
 	if endpoint == "" {
 		const msg = "Invalid vLLM Endpoint"
-		log.Printf("time=%q level=error msg=%q logger=%s", time.Now().Format(time.RFC3339), msg, loggerPath)
+		slog.Error(msg, "logger", loggerPath)
 		fmt.Printf("{\"error\": \"%s\"}\n", msg)
 		return nil
 	}
 
 	if cfg.APIKey == "" {
 		const msg = "Invalid vLLM Credentials"
-		log.Printf("time=%q level=error msg=%q logger=%s", time.Now().Format(time.RFC3339), msg, loggerPath)
+		slog.Error(msg, "logger", loggerPath)
 		fmt.Printf("{\"error\": \"%s\"}\n", msg)
 		return nil
 	}

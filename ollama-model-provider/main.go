@@ -2,10 +2,9 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/obot-platform/tools/openai-model-provider/proxy"
 )
@@ -20,7 +19,7 @@ func ValidateOllamaAPIKey(cfg *proxy.Config) error {
 	host := os.Getenv("OBOT_OLLAMA_MODEL_PROVIDER_HOST")
 	if host == "" {
 		const msg = "Invalid Ollama Host"
-		log.Printf("time=%q level=error msg=%q logger=%s", time.Now().Format(time.RFC3339), msg, loggerPath)
+		slog.Error(msg, "logger", loggerPath)
 		fmt.Printf("{\"error\": \"%s\"}\n", msg)
 		return nil
 	}

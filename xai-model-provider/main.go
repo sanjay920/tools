@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/obot-platform/tools/openai-model-provider/proxy"
 )
@@ -16,7 +15,7 @@ const loggerPath = "/tools/xai-model-provider/validate"
 func ValidateXAIAPIKey(cfg *proxy.Config) error {
 	if cfg.APIKey == "" {
 		const msg = "Invalid xAI Credentials"
-		log.Printf("time=%q level=error msg=%q logger=%s", time.Now().Format(time.RFC3339), msg, loggerPath)
+		slog.Error(msg, "logger", loggerPath)
 		fmt.Printf("{\"error\": \"%s\"}\n", msg)
 		return nil
 	}
