@@ -3,7 +3,6 @@ package proxy
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 )
@@ -35,22 +34,14 @@ func DoValidate(apiKey, urlStr, loggerPath, invalidCredsMsg string) error {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return handleValidationError(loggerPath, invalidCredsMsg)
-	}
-
-	if resp.StatusCode != 200 {
-		return handleValidationError(loggerPath, invalidCredsMsg)
-	}
-
 	var modelsResp struct {
 		Object string `json:"object"`
 		Data   []any  `json:"data"`
 	}
-	if err := json.Unmarshal(body, &modelsResp); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&modelsResp); err != nil {
 		return handleValidationError(loggerPath, invalidCredsMsg)
 	}
+
 	if len(modelsResp.Data) == 0 {
 		return handleValidationError(loggerPath, invalidCredsMsg)
 	}
