@@ -16,7 +16,7 @@ func handleValidationError(loggerPath, msg string) error {
 type ValidateFn func(cfg *Config) error
 
 func DefaultValidateOpenAIFunc(cfg *Config) error {
-	url := "https://api.openai.com/v1/models"
+	url := fmt.Sprintf("https://%s/v1/models", cfg.UpstreamHost)
 	return DoValidate(cfg.APIKey, url, "/tools/openai-model-provider/validate", "Invalid OpenAI Credentials")
 }
 
