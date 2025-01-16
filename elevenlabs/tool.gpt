@@ -1,0 +1,24 @@
+---
+Name: ElevenLabs
+Description: Tools for interacting with ElevenLabs text-to-speech API.
+Share Tools: Text to Speech
+Metadata: bundle: true
+
+---
+Name: Text to Speech
+Description: Convert text to speech using ElevenLabs API
+Credential: ./credential
+Param: text: The text to convert to speech
+Param: voice_id: The ID of the voice to use
+Param: output_file: The path where the audio file should be saved
+
+#!${GPTSCRIPT_TOOL_DIR}/bin/gptscript-go-tool text-to-speech
+
+---
+!metadata:*:category
+ElevenLabs
+
+---
+!metadata:*:icon
+/admin/assets/elevenlabs_icon.svg
+
