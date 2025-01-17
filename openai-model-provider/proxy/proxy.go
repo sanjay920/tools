@@ -44,7 +44,7 @@ func Run(cfg *Config) error {
 	s := &server{cfg: cfg}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", s.healthz)
+	mux.HandleFunc("/{$}", s.healthz)
 	mux.Handle("/v1/models", &httputil.ReverseProxy{
 		Director:       s.proxyDirector,
 		ModifyResponse: cfg.RewriteModelsFn,
