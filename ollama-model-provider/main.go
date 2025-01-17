@@ -7,8 +7,6 @@ import (
 	"github.com/obot-platform/tools/openai-model-provider/proxy"
 )
 
-const loggerPath = "/tools/ollama-model-provider/validate"
-
 func cleanHost(host string) string {
 	return strings.TrimRight(host, "/")
 }
@@ -21,22 +19,16 @@ func main() {
 	host = cleanHost(host)
 
 	cfg := &proxy.Config{
-		APIKey:       "",
-		Port:         os.Getenv("PORT"),
-		UpstreamHost: host,
-		UseTLS:       false,
-		ValidateFn: func(cfg *proxy.Config) error {
-			return proxy.DoValidate(cfg, loggerPath, "Invalid Ollama Host")
-		},
+		APIKey:          "",
+		Port:            os.Getenv("PORT"),
+		UpstreamHost:    host,
+		UseTLS:          false,
 		RewriteModelsFn: proxy.RewriteAllModelsWithUsage("llm"),
-	}
-
-	if cfg.Port == "" {
-		cfg.Port = "8000"
+		Name:            "Ollama",
 	}
 
 	if len(os.Args) > 1 && os.Args[1] == "validate" {
-		if err := proxy.Validate(cfg); err != nil {
+		if err := cfg.Validate("/tools/ollama-model-provider/validate"); err != nil {
 			os.Exit(1)
 		}
 		return

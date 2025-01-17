@@ -16,6 +16,7 @@ type Config struct {
 	ValidateFn      func(cfg *Config) error
 	RewriteModelsFn func(*http.Response) error
 	PathPrefix      string
+	Name            string
 }
 
 type server struct {

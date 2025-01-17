@@ -16,7 +16,7 @@ func handleValidationError(loggerPath, msg string) error {
 	return nil
 }
 
-func DoValidate(cfg *Config, loggerPath, invalidCredsMsg string) error {
+func (cfg *Config) Validate(toolPath string) error {
 	scheme := "https"
 	if !cfg.UseTLS {
 		scheme = "http"
@@ -26,7 +26,7 @@ func DoValidate(cfg *Config, loggerPath, invalidCredsMsg string) error {
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return handleValidationError(loggerPath, invalidCredsMsg)
+		return handleValidationError(toolPath, fmt.Sprintf("Invalid %s Configuration", cfg.Name))
 	}
 
 	req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
@@ -35,31 +35,27 @@ func DoValidate(cfg *Config, loggerPath, invalidCredsMsg string) error {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return handleValidationError(loggerPath, invalidCredsMsg)
+		return handleValidationError(toolPath, fmt.Sprintf("Invalid %s Configuration", cfg.Name))
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return handleValidationError(loggerPath, invalidCredsMsg)
+		return handleValidationError(toolPath, fmt.Sprintf("Invalid %s Credentials", cfg.Name))
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return handleValidationError(loggerPath, invalidCredsMsg)
+		return handleValidationError(toolPath, "Invalid Response")
 	}
 
 	var modelsResp api.ModelsResponse
 	if err := json.Unmarshal(body, &modelsResp); err != nil {
-		return handleValidationError(loggerPath, invalidCredsMsg)
+		return handleValidationError(toolPath, "Invalid Response Format")
 	}
 
 	if modelsResp.Object != "list" || len(modelsResp.Data) == 0 {
-		return handleValidationError(loggerPath, invalidCredsMsg)
+		return handleValidationError(toolPath, "Invalid Models Response")
 	}
 
 	return nil
-}
-
-func DefaultValidateOpenAIFunc(cfg *Config) error {
-	return DoValidate(cfg, "/tools/openai-model-provider/validate", "Invalid OpenAI Credentials")
 }

@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/obot-platform/tools/openai-model-provider/api"
 )
 
 func DefaultRewriteModelsResponse(resp *http.Response) error {
@@ -28,16 +30,7 @@ func DefaultRewriteModelsResponse(resp *http.Response) error {
 		body = gzReader
 	}
 
-	var models struct {
-		Object string `json:"object"`
-		Data   []struct {
-			ID       string            `json:"id"`
-			Object   string            `json:"object"`
-			OwnedBy  string            `json:"owned_by"`
-			Metadata map[string]string `json:"metadata,omitempty"`
-		} `json:"data"`
-	}
-
+	var models api.ModelsResponse
 	if err := json.NewDecoder(body).Decode(&models); err != nil {
 		return fmt.Errorf("failed to decode models response: %w", err)
 	}
@@ -66,12 +59,14 @@ func DefaultRewriteModelsResponse(resp *http.Response) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal models response: %w", err)
 	}
+
 	resp.Body = io.NopCloser(bytes.NewReader(b))
 	resp.Header.Set("Content-Length", fmt.Sprintf("%d", len(b)))
 	return nil
 }
 
-func RewriteAllModelsWithUsage(usage string, filter ...func(string) bool) func(*http.Response) error {
+// RewriteAllModelsWithUsage returns a response modifier that marks all models with the specified usage
+func RewriteAllModelsWithUsage(usage string, filters ...func(string) bool) func(*http.Response) error {
 	return func(resp *http.Response) error {
 		if resp.StatusCode != http.StatusOK {
 			return nil
@@ -90,38 +85,26 @@ func RewriteAllModelsWithUsage(usage string, filter ...func(string) bool) func(*
 			body = gzReader
 		}
 
-		var models struct {
-			Object string `json:"object"`
-			Data   []struct {
-				ID       string            `json:"id"`
-				Object   string            `json:"object"`
-				OwnedBy  string            `json:"owned_by"`
-				Metadata map[string]string `json:"metadata,omitempty"`
-			} `json:"data"`
-		}
-
+		var models api.ModelsResponse
 		if err := json.NewDecoder(body).Decode(&models); err != nil {
 			return fmt.Errorf("failed to decode models response: %w", err)
 		}
 
 		for i, model := range models.Data {
-			// If there are no filters, then mark everything.
-			shouldMark := len(filter) == 0
-			for _, f := range filter {
-				shouldMark = f == nil || f(model.ID)
-				if !shouldMark {
-					// As soon as one says we shouldn't mark, then we can stop.
-					break
-				}
+			if model.Metadata == nil {
+				model.Metadata = make(map[string]string)
 			}
-
-			if shouldMark {
-				if model.Metadata == nil {
-					model.Metadata = make(map[string]string)
-				}
+			if len(filters) == 0 {
 				model.Metadata["usage"] = usage
-				models.Data[i] = model
+			} else {
+				for _, filter := range filters {
+					if filter(model.ID) {
+						model.Metadata["usage"] = usage
+						break
+					}
+				}
 			}
+			models.Data[i] = model
 		}
 
 		b, err := json.Marshal(models)

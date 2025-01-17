@@ -9,8 +9,6 @@ import (
 	"github.com/obot-platform/tools/openai-model-provider/proxy"
 )
 
-const loggerPath = "/tools/vllm-model-provider/validate"
-
 func cleanURL(endpoint string) string {
 	return strings.TrimRight(endpoint, "/")
 }
@@ -44,22 +42,16 @@ func main() {
 	}
 
 	cfg := &proxy.Config{
-		APIKey:       apiKey,
-		Port:         os.Getenv("PORT"),
-		UpstreamHost: u.Host,
-		UseTLS:       u.Scheme == "https",
-		ValidateFn: func(cfg *proxy.Config) error {
-			return proxy.DoValidate(cfg, loggerPath, "Invalid vLLM Configuration")
-		},
+		APIKey:          apiKey,
+		Port:            os.Getenv("PORT"),
+		UpstreamHost:    u.Host,
+		UseTLS:          u.Scheme == "https",
 		RewriteModelsFn: proxy.RewriteAllModelsWithUsage("llm"),
-	}
-
-	if cfg.Port == "" {
-		cfg.Port = "8000"
+		Name:            "vLLM",
 	}
 
 	if len(os.Args) > 1 && os.Args[1] == "validate" {
-		if err := proxy.Validate(cfg); err != nil {
+		if err := cfg.Validate("/tools/vllm-model-provider/validate"); err != nil {
 			os.Exit(1)
 		}
 		return

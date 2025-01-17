@@ -25,15 +25,11 @@ func main() {
 		UpstreamHost:    "api.openai.com",
 		UseTLS:          true,
 		RewriteModelsFn: proxy.DefaultRewriteModelsResponse,
-		ValidateFn:      proxy.DefaultValidateOpenAIFunc,
-	}
-
-	if cfg.Port == "" {
-		cfg.Port = "8000"
+		Name:            "OpenAI",
 	}
 
 	if len(os.Args) > 1 && os.Args[1] == "validate" {
-		if err := proxy.Validate(cfg); err != nil {
+		if err := cfg.Validate("/tools/openai-model-provider/validate"); err != nil {
 			os.Exit(1)
 		}
 		return

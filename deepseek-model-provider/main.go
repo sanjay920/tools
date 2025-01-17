@@ -7,8 +7,6 @@ import (
 	"github.com/obot-platform/tools/openai-model-provider/proxy"
 )
 
-const loggerPath = "/tools/deepseek-model-provider/validate"
-
 func main() {
 	apiKey := os.Getenv("OBOT_DEEPSEEK_MODEL_PROVIDER_API_KEY")
 	if apiKey == "" {
@@ -17,22 +15,16 @@ func main() {
 	}
 
 	cfg := &proxy.Config{
-		APIKey:       apiKey,
-		Port:         os.Getenv("PORT"),
-		UpstreamHost: "api.deepseek.com",
-		UseTLS:       true,
-		ValidateFn: func(cfg *proxy.Config) error {
-			return proxy.DoValidate(cfg, loggerPath, "Invalid DeepSeek Credentials")
-		},
+		APIKey:          apiKey,
+		Port:            os.Getenv("PORT"),
+		UpstreamHost:    "api.deepseek.com",
+		UseTLS:          true,
 		RewriteModelsFn: proxy.RewriteAllModelsWithUsage("llm"),
-	}
-
-	if cfg.Port == "" {
-		cfg.Port = "8000"
+		Name:            "DeepSeek",
 	}
 
 	if len(os.Args) > 1 && os.Args[1] == "validate" {
-		if err := proxy.Validate(cfg); err != nil {
+		if err := cfg.Validate("/tools/deepseek-model-provider/validate"); err != nil {
 			os.Exit(1)
 		}
 		return
