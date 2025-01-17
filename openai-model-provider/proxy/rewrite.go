@@ -105,9 +105,14 @@ func RewriteAllModelsWithUsage(usage string, filter ...func(string) bool) func(*
 		}
 
 		for i, model := range models.Data {
-			shouldMark := true
-			if len(filter) > 0 && filter[0] != nil {
-				shouldMark = filter[0](model.ID)
+			// If there are no filters, then mark everything.
+			shouldMark := len(filter) == 0
+			for _, f := range filter {
+				shouldMark = f == nil || f(model.ID)
+				if !shouldMark {
+					// As soon as one says we shouldn't mark, then we can stop.
+					break
+				}
 			}
 
 			if shouldMark {
