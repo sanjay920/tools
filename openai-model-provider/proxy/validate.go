@@ -47,6 +47,5 @@ func DoValidate(apiKey, urlStr, loggerPath, invalidCredsMsg string) error {
 	}
 
 	slog.Info("Credentials are valid", "logger", loggerPath)
-	fmt.Println("{\"message\": \"Credentials are valid\"}")
 	return nil
 }

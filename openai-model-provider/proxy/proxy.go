@@ -84,8 +84,6 @@ func (s *server) proxyDirector(req *http.Request) {
 		if !strings.HasPrefix(req.URL.Path, s.cfg.PathPrefix) {
 			req.URL.Path = s.cfg.PathPrefix + req.URL.Path
 		}
-	} else if !strings.HasPrefix(req.URL.Path, "/v1") {
-		req.URL.Path = "/v1" + req.URL.Path
 	}
 }
 
