@@ -3,7 +3,6 @@ package proxy
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 
@@ -43,13 +42,8 @@ func (cfg *Config) Validate(toolPath string) error {
 		return handleValidationError(toolPath, fmt.Sprintf("Invalid %s Credentials", cfg.Name))
 	}
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return handleValidationError(toolPath, "Invalid Response")
-	}
-
 	var modelsResp api.ModelsResponse
-	if err := json.Unmarshal(body, &modelsResp); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&modelsResp); err != nil {
 		return handleValidationError(toolPath, "Invalid Response Format")
 	}
 
