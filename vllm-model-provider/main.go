@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log/slog"
 	"net/url"
 	"os"
 	"strings"
@@ -14,26 +13,6 @@ const loggerPath = "/tools/vllm-model-provider/validate"
 
 func cleanURL(endpoint string) string {
 	return strings.TrimRight(endpoint, "/")
-}
-
-func ValidateVLLMAPIKey(cfg *proxy.Config) error {
-	endpoint := os.Getenv("OBOT_VLLM_MODEL_PROVIDER_ENDPOINT")
-	if endpoint == "" {
-		const msg = "Invalid vLLM Endpoint"
-		slog.Error(msg, "logger", loggerPath)
-		fmt.Printf("{\"error\": \"%s\"}\n", msg)
-		return nil
-	}
-
-	if cfg.APIKey == "" {
-		const msg = "Invalid vLLM Credentials"
-		slog.Error(msg, "logger", loggerPath)
-		fmt.Printf("{\"error\": \"%s\"}\n", msg)
-		return nil
-	}
-
-	endpoint = cleanURL(endpoint)
-	return proxy.DoValidate(cfg.APIKey, endpoint+"/v1/models", loggerPath, "Invalid vLLM Configuration")
 }
 
 func main() {
@@ -65,11 +44,13 @@ func main() {
 	}
 
 	cfg := &proxy.Config{
-		APIKey:          apiKey,
-		Port:            os.Getenv("PORT"),
-		UpstreamHost:    u.Host,
-		UseTLS:          u.Scheme == "https",
-		ValidateFn:      ValidateVLLMAPIKey,
+		APIKey:       apiKey,
+		Port:         os.Getenv("PORT"),
+		UpstreamHost: u.Host,
+		UseTLS:       u.Scheme == "https",
+		ValidateFn: func(cfg *proxy.Config) error {
+			return proxy.DoValidate(cfg, loggerPath, "Invalid vLLM Configuration")
+		},
 		RewriteModelsFn: proxy.RewriteAllModelsWithUsage("llm"),
 	}
 

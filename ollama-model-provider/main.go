@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"log/slog"
 	"os"
 	"strings"
 
@@ -15,20 +13,6 @@ func cleanHost(host string) string {
 	return strings.TrimRight(host, "/")
 }
 
-func ValidateOllamaAPIKey(cfg *proxy.Config) error {
-	host := os.Getenv("OBOT_OLLAMA_MODEL_PROVIDER_HOST")
-	if host == "" {
-		const msg = "Invalid Ollama Host"
-		slog.Error(msg, "logger", loggerPath)
-		fmt.Printf("{\"error\": \"%s\"}\n", msg)
-		return nil
-	}
-
-	host = cleanHost(host)
-	url := fmt.Sprintf("http://%s/v1/models", host)
-	return proxy.DoValidate("", url, loggerPath, "Invalid Ollama Host")
-}
-
 func main() {
 	host := os.Getenv("OBOT_OLLAMA_MODEL_PROVIDER_HOST")
 	if host == "" {
@@ -37,13 +21,14 @@ func main() {
 	host = cleanHost(host)
 
 	cfg := &proxy.Config{
-		APIKey:          "",
-		Port:            os.Getenv("PORT"),
-		UpstreamHost:    host,
-		UseTLS:          false,
-		ValidateFn:      ValidateOllamaAPIKey,
+		APIKey:       "",
+		Port:         os.Getenv("PORT"),
+		UpstreamHost: host,
+		UseTLS:       false,
+		ValidateFn: func(cfg *proxy.Config) error {
+			return proxy.DoValidate(cfg, loggerPath, "Invalid Ollama Host")
+		},
 		RewriteModelsFn: proxy.RewriteAllModelsWithUsage("llm"),
-		PathPrefix:      "/v1",
 	}
 
 	if cfg.Port == "" {

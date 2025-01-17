@@ -31,6 +31,18 @@ func Run(cfg *Config) error {
 		cfg.UseTLS = true
 	}
 
+	// Remove any scheme prefix from UpstreamHost if present
+	if strings.HasPrefix(cfg.UpstreamHost, "http://") {
+		cfg.UpstreamHost = strings.TrimPrefix(cfg.UpstreamHost, "http://")
+		cfg.UseTLS = false
+	} else if strings.HasPrefix(cfg.UpstreamHost, "https://") {
+		cfg.UpstreamHost = strings.TrimPrefix(cfg.UpstreamHost, "https://")
+		cfg.UseTLS = true
+	}
+
+	// Remove any trailing slashes from UpstreamHost
+	cfg.UpstreamHost = strings.TrimRight(cfg.UpstreamHost, "/")
+
 	if cfg.RewriteModelsFn == nil {
 		cfg.RewriteModelsFn = DefaultRewriteModelsResponse
 	}

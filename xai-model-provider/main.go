@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log/slog"
 	"net/http"
 	"os"
 	"strings"
@@ -12,19 +11,6 @@ import (
 
 const loggerPath = "/tools/xai-model-provider/validate"
 
-func ValidateXAIAPIKey(cfg *proxy.Config) error {
-	if cfg.APIKey == "" {
-		const msg = "Invalid xAI Credentials"
-		slog.Error(msg, "logger", loggerPath)
-		fmt.Printf("{\"error\": \"%s\"}\n", msg)
-		return nil
-	}
-
-	url := "https://api.x.ai/v1/models"
-	return proxy.DoValidate(cfg.APIKey, url, loggerPath, "Invalid xAI Credentials")
-}
-
-// RewriteGrokModels marks only Grok models as LLMs
 func RewriteGrokModels(resp *http.Response) error {
 	rewriteFn := proxy.RewriteAllModelsWithUsage("llm", func(modelID string) bool {
 		return strings.HasPrefix(modelID, "grok-")
@@ -40,11 +26,13 @@ func main() {
 	}
 
 	cfg := &proxy.Config{
-		APIKey:          apiKey,
-		Port:            os.Getenv("PORT"),
-		UpstreamHost:    "api.x.ai",
-		UseTLS:          true,
-		ValidateFn:      ValidateXAIAPIKey,
+		APIKey:       apiKey,
+		Port:         os.Getenv("PORT"),
+		UpstreamHost: "api.x.ai",
+		UseTLS:       true,
+		ValidateFn: func(cfg *proxy.Config) error {
+			return proxy.DoValidate(cfg, loggerPath, "Invalid xAI Credentials")
+		},
 		RewriteModelsFn: RewriteGrokModels,
 	}
 

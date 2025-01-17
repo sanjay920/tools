@@ -3,8 +3,11 @@ package proxy
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
+
+	"github.com/obot-platform/tools/openai-model-provider/api"
 )
 
 func handleValidationError(loggerPath, msg string) error {
@@ -13,39 +16,50 @@ func handleValidationError(loggerPath, msg string) error {
 	return nil
 }
 
-type ValidateFn func(cfg *Config) error
+func DoValidate(cfg *Config, loggerPath, invalidCredsMsg string) error {
+	scheme := "https"
+	if !cfg.UseTLS {
+		scheme = "http"
+	}
 
-func DefaultValidateOpenAIFunc(cfg *Config) error {
-	url := fmt.Sprintf("https://%s/v1/models", cfg.UpstreamHost)
-	return DoValidate(cfg.APIKey, url, "/tools/openai-model-provider/validate", "Invalid OpenAI Credentials")
-}
+	url := fmt.Sprintf("%s://%s%s/v1/models", scheme, cfg.UpstreamHost, cfg.PathPrefix)
 
-func DoValidate(apiKey, urlStr, loggerPath, invalidCredsMsg string) error {
-	req, err := http.NewRequest("GET", urlStr, nil)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return handleValidationError(loggerPath, invalidCredsMsg)
 	}
-	req.Header.Set("Authorization", "Bearer "+apiKey)
+
+	req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return handleValidationError(loggerPath, invalidCredsMsg)
 	}
 	defer resp.Body.Close()
 
-	var modelsResp struct {
-		Object string `json:"object"`
-		Data   []any  `json:"data"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&modelsResp); err != nil {
+	if resp.StatusCode != http.StatusOK {
 		return handleValidationError(loggerPath, invalidCredsMsg)
 	}
 
-	if len(modelsResp.Data) == 0 {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return handleValidationError(loggerPath, invalidCredsMsg)
 	}
 
-	slog.Info("Credentials are valid", "logger", loggerPath)
+	var modelsResp api.ModelsResponse
+	if err := json.Unmarshal(body, &modelsResp); err != nil {
+		return handleValidationError(loggerPath, invalidCredsMsg)
+	}
+
+	if modelsResp.Object != "list" || len(modelsResp.Data) == 0 {
+		return handleValidationError(loggerPath, invalidCredsMsg)
+	}
+
 	return nil
+}
+
+func DefaultValidateOpenAIFunc(cfg *Config) error {
+	return DoValidate(cfg, "/tools/openai-model-provider/validate", "Invalid OpenAI Credentials")
 }

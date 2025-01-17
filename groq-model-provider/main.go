@@ -2,25 +2,12 @@ package main
 
 import (
 	"fmt"
-	"log/slog"
 	"os"
 
 	"github.com/obot-platform/tools/openai-model-provider/proxy"
 )
 
 const loggerPath = "/tools/groq-model-provider/validate"
-
-func ValidateGroqAPIKey(cfg *proxy.Config) error {
-	if cfg.APIKey == "" {
-		const msg = "Invalid Groq Credentials"
-		slog.Error(msg, "logger", loggerPath)
-		fmt.Printf("{\"error\": \"%s\"}\n", msg)
-		return nil
-	}
-
-	url := "https://api.groq.com/openai/v1/models"
-	return proxy.DoValidate(cfg.APIKey, url, loggerPath, "Invalid Groq Credentials")
-}
 
 func main() {
 	apiKey := os.Getenv("OBOT_GROQ_MODEL_PROVIDER_API_KEY")
@@ -30,11 +17,13 @@ func main() {
 	}
 
 	cfg := &proxy.Config{
-		APIKey:          apiKey,
-		Port:            os.Getenv("PORT"),
-		UpstreamHost:    "api.groq.com",
-		UseTLS:          true,
-		ValidateFn:      ValidateGroqAPIKey,
+		APIKey:       apiKey,
+		Port:         os.Getenv("PORT"),
+		UpstreamHost: "api.groq.com",
+		UseTLS:       true,
+		ValidateFn: func(cfg *proxy.Config) error {
+			return proxy.DoValidate(cfg, loggerPath, "Invalid Groq Credentials")
+		},
 		RewriteModelsFn: proxy.RewriteAllModelsWithUsage("llm"),
 		PathPrefix:      "/openai",
 	}
