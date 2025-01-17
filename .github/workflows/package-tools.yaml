@@ -1,11 +1,9 @@
-name: Build Docker Image
+name: Package tools
 
 on:
   pull_request:
     branches:
       - main
-    paths-ignore:
-      - docs/**
 
 jobs:
   build:
@@ -15,9 +13,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          repository: github.com/obot-platform/obot
+          repository: obot-platform/obot
 
-      - name: Make packages
-        run: make package-tools
-        env:
-          TOOL_REGISTRY_REPOS: github.com/${{ github.repository }}@${{ github.sha }}
+      - name: Setup Depot
+        uses: depot/setup-action@v1
+
+      - name: Build Docker Image
+        uses: depot/build-push-action@v1
+        with:
+          project: bbqjs4tj1g
+          context: .
+          platforms: linux/amd64
+          build-args: |
+            TOOL_REGISTRY_REPOS=github.com/${{ github.event.pull_request.head.repo.full_name }}@${{ github.event.pull_request.head.sha }}
