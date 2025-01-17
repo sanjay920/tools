@@ -81,8 +81,7 @@ func (s *server) proxyDirector(req *http.Request) {
 	req.Header.Set("Authorization", "Bearer "+s.cfg.APIKey)
 
 	if s.cfg.PathPrefix != "" && !strings.HasPrefix(req.URL.Path, s.cfg.PathPrefix) {
-			req.URL.Path = s.cfg.PathPrefix + req.URL.Path
-		}
+		req.URL.Path = s.cfg.PathPrefix + req.URL.Path
 	}
 }
 
