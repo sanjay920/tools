@@ -29,8 +29,6 @@ When calling the Scrape URL tool:
 - The `formats` parameter must be a valid JSON-formatted string specifying desired formats (e.g., markdown, html).
 - Always validate the URL and formats before scraping.
 
-# END INSTRUCTIONS: Scrape URL tool
-
 ---
 !metadata:*:icon
 https://firecrawl.dev/favicon.ico

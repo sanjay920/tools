@@ -73,7 +73,8 @@ tools:
     reference: ./die-roller
   smartthings:
     reference: ./smartthings
-
+  firecrawl:
+    reference: ./firecrawl
 knowledgeDataSources:
   notion-data-source:
     reference: ./knowledge/data-sources/notion
