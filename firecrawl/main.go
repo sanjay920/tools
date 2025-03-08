@@ -4,9 +4,31 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/obot-platform/tools/firecrawl/cmd"
 )
+
+func validateAPIKey() string {
+	apiKey := strings.TrimSpace(os.Getenv("FIRECRAWL_API_KEY"))
+	if apiKey == "" {
+		exitWithError("API key is required")
+	}
+	return apiKey
+}
+
+func validateRequiredParam(value, name string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		exitWithError(fmt.Sprintf("%s is required", name))
+	}
+	return value
+}
+
+func exitWithError(msg string) {
+	fmt.Println(msg)
+	os.Exit(1)
+}
 
 func main() {
 	if len(os.Args) != 2 {
@@ -21,21 +43,20 @@ func main() {
 		ctx    = context.Background()
 	)
 
+	apiKey := validateAPIKey()
+
 	switch command {
 	case "scrapeUrl":
-		result, err = cmd.Scrape(ctx,
-			os.Getenv("FIRECRAWL_API_KEY"),
-			os.Getenv("FIRECRAWL_URL_TO_SCRAPE"),
-		)
+		url := validateRequiredParam(os.Getenv("URL"), "URL")
+		result, err = cmd.Scrape(ctx, apiKey, url)
+		
 	default:
-		err = fmt.Errorf("unknown command: %s", command)
+		exitWithError(fmt.Sprintf("unknown command: %s", command))
 	}
 
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		exitWithError(err.Error())
 	}
 
 	fmt.Print(result)
 }
-

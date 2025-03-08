@@ -6,11 +6,10 @@ Share Tools: Scrape URL
 
 ---
 Name: Scrape URL
-Description: Scrape a URL using Firecrawl.
+Description: Scrape a URL and convert it to markdown using Firecrawl.
 Share Context: Firecrawl Context
 Credentials: ./credential
-Param: firecrawl_url_to_scrape: The URL to scrape.
-Param: formats: A JSON-formatted string specifying the formats to scrape (e.g., markdown, html).
+Param: url: The URL to scrape.
 
 #!${GPTSCRIPT_TOOL_DIR}/bin/gptscript-go-tool scrapeUrl
 
@@ -26,8 +25,11 @@ The Scrape URL tool allows you to scrape websites using Firecrawl.
 
 When calling the Scrape URL tool:
 - The `url` parameter is required.
-- The `formats` parameter must be a valid JSON-formatted string specifying desired formats (e.g., markdown, html).
-- Always validate the URL and formats before scraping.
+- The tool will automatically convert the webpage content to markdown format.
+- Always validate the URL before scraping.
+- The tool returns full scrape results including markdown content and metadata.
+
+# END INSTRUCTIONS: Scrape URL tool
 
 ---
 !metadata:*:icon
